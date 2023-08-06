@@ -1,12 +1,13 @@
 package com.example.tankegame.game3;
 
+import java.io.Serializable;
 import java.util.Vector;
 
 /**
  * @author wza
  * @version 1.0.0
  */
-public class Tank {
+public class Tank implements Serializable {
     private int x;
     private int y;
     private int direct;
@@ -52,22 +53,22 @@ public class Tank {
 
     public void moveUp() {
         y--;
-        direct=0;
+        direct = 0;
     }
 
     public void moveDown() {
         y++;
-        direct=2;
+        direct = 2;
     }
 
     public void moveLeft() {
         x--;
-        direct=3;
+        direct = 3;
     }
 
     public void moveRight() {
         x++;
-        direct=1;
+        direct = 1;
     }
 
     public Vector<Shot> getShotVector() {

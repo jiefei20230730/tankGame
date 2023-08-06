@@ -1,10 +1,12 @@
 package com.example.tankegame.game3;
 
+import java.io.Serializable;
+
 /**
  * @author wza
  * @version 1.0.0
  */
-public class Enemy extends Tank {
+public class Enemy extends Tank implements Serializable {
     public final int color = 1;
 
     public Enemy(int x, int y) {

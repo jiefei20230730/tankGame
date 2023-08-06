@@ -1,10 +1,12 @@
 package com.example.tankegame.game3;
 
+import java.io.Serializable;
+
 /**
  * @author wza
  * @version 1.0.0
  */
-public class Shot implements Runnable {
+public class Shot implements Runnable, Serializable {
     private int x;//子弹x
     private int y;//子弹y
     private int direct;
@@ -39,7 +41,9 @@ public class Shot implements Runnable {
             }
 
             //判断是否边界
-            if (x < 0 || x > panelX || y < 0 || y > panelY) {
+            System.out.println("x=" + x + ",y=" + y);
+            if (x < 0 || x > panelX || y < 0 || y > panelY || !isLive) {
+                System.out.println("子线程退出");
                 isLive = false;
                 break;
             }

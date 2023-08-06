@@ -26,9 +26,12 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
         //初始化我的坦克
         this.hero = new Hero(0, 0);
         //初始化敌人的坦克
-        for (int i = 0; i < enemyTankSize; i++) {
+        for (int i = 0; i < enemyTankSize; i++) {//todo 写死生成的敌方坦克
             Enemy enemy = new Enemy(100 * (i + 1), 40);
             enemy.setDirect(2);
+            if (i == 2) {
+                enemy.setDirect(3);
+            }
             enemyVector.add(enemy);
             enemy.shot(width, height);//每个敌方坦克射击一下
         }
@@ -59,16 +62,18 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
             //判断当前子弹是否击中敌方，击中的话当前子弹和敌方坦克一起消失
             if (shot.isLive()) {
                 drawBullet(shot, g, hero.getColor());
-                isShoted(shot);
+                hitTank(shot);
             }
         }
 
         //画敌方坦克和子弹
-        for (Enemy enemy : enemyVector) {
+        Iterator<Enemy> enemyIterator = enemyVector.iterator();
+        while (enemyIterator.hasNext()) {
+            Enemy enemy = enemyIterator.next();
             drawTank(enemy.getX(), enemy.getY(), g, enemy.getDirect(), enemy.getColor());
 
             Iterator<Shot> iterator = enemy.getShotVector().iterator();
-            if (iterator.hasNext()) {
+            while (iterator.hasNext()) {
                 Shot shot = iterator.next();
                 if (shot.isLive()) {
                     drawBullet(shot, g, enemy.getColor());
@@ -77,7 +82,6 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
                 }
             }
         }
-
     }
 
     /*子弹中心（比如子弹范围0,0-2,2  则中心为0,1）*/
@@ -146,6 +150,8 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
             case 1://敌人的坦克
                 g.setColor(Color.cyan);
                 break;
+            default:
+                System.out.println("无法根据坦克类型判断颜色");
         }
         //根据方向画坦克，改变方向以坦克中心为中心重新绘画
         switch (direct) {
@@ -182,10 +188,10 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
         }
     }
 
-    private void isShoted(Shot shot) {
+    private void hitTank(Shot shot) {
 
         Iterator<Enemy> iterator = enemyVector.iterator();
-        if (iterator.hasNext()) {
+        while (iterator.hasNext()) {
             Enemy enemy = iterator.next();
             if (innerTank(shot, enemy)) {
                 iterator.remove();
@@ -195,22 +201,22 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
     }
 
     private boolean innerTank(Shot shot, Enemy enemy) {
-        //子弹任何一角在坦克内就算击中
-        //左上 shot.getX()-1，shot.getY()
-        //左下 shot.getX()-1，shot.getY()+2
-        //右上 shot.getX()+1，shot.getY()
-        //右下 shot.getX()+1，shot.getY()+2
-        if (shot.getX() - 1 > enemy.getX() - 20 && shot.getX() - 1 < enemy.getX() + 20 && shot.getY() > enemy.getY() - 30 && shot.getY() < enemy.getY() + 30) {
-            return true;
-        }
-        if (shot.getX() - 1 > enemy.getX() - 20 && shot.getX() - 1 < enemy.getX() + 20 && shot.getY() + 2 > enemy.getY() - 30 && shot.getY() + 2 < enemy.getY() + 30) {
-            return true;
-        }
-        if (shot.getX() + 1 > enemy.getX() - 20 && shot.getX() + 1 < enemy.getX() + 20 && shot.getY() > enemy.getY() - 30 && shot.getY() < enemy.getY() + 30) {
-            return true;
-        }
-        if (shot.getX() + 1 > enemy.getX() - 20 && shot.getX() + 1 < enemy.getX() + 20 && shot.getY() + 2 > enemy.getY() - 30 && shot.getY() + 2 < enemy.getY() + 30) {
-            return true;
+        //子弹中心（shot.getX()，shot.getY()+1）在坦克边界就算击中
+        switch (enemy.getDirect()) {
+            case 0:
+            case 2:
+                if (shot.getX() >= enemy.getX() - 20 && shot.getX() <= enemy.getX() + 20 && shot.getY() + 1 >= enemy.getY() - 30 && shot.getY() + 1 <= enemy.getY() + 30) {
+                    return true;
+                }
+                break;
+            case 1:
+            case 3:
+                if (shot.getX() >= enemy.getX() - 30 && shot.getX() <= enemy.getX() + 30 && shot.getY() + 1 >= enemy.getY() - 20 && shot.getY() + 1 <= enemy.getY() + 20) {
+                    return true;
+                }
+                break;
+            default:
+
         }
         return false;
     }
