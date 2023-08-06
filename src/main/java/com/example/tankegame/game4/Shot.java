@@ -6,17 +6,17 @@ import java.io.Serializable;
  * @author wza
  * @version 1.0.0
  */
-public class Shot implements Runnable, Serializable {
+public class Shot extends Thread implements Serializable {
     private int x;//子弹x
     private int y;//子弹y
+    private int speed = 5;//子弹速度
     private int direct;
     private boolean isLive = true;
-    private int panelX;//画板x
-    private int panelY;//画板y
 
     @Override
     public void run() {
-        while (true) {
+        loop:
+        while (isLive) {
             try {
                 Thread.sleep(50);
             } catch (InterruptedException e) {
@@ -25,16 +25,16 @@ public class Shot implements Runnable, Serializable {
 
             switch (direct) {
                 case 0:
-                    y--;
+                    y = y - speed;
                     break;
                 case 1:
-                    x++;
+                    x = x + speed;
                     break;
                 case 2:
-                    y++;
+                    y = y + speed;
                     break;
                 case 3:
-                    x--;
+                    x = x - speed;
                     break;
                 default:
                     throw new RuntimeException("子弹方向不正确:" + direct);
@@ -42,18 +42,15 @@ public class Shot implements Runnable, Serializable {
 
             //判断是否边界
             System.out.println("x=" + x + ",y=" + y);
-            if (x < 0 || x > panelX || y < 0 || y > panelY || !isLive) {
+            if (!(x >= 0 && x <= MyPanel.width && y >= 0 && y <= MyPanel.height && isLive)) {
                 System.out.println("子线程退出");
                 isLive = false;
-                break;
+                break loop;
             }
         }
     }
 
-
-    public Shot(Tank tank, int panelX, int panelY) {
-        this.panelX = panelX;
-        this.panelY = panelY;
+    public Shot(Tank tank) {
         //根据坦克获取子弹x y
         getBulletByTank(tank);
     }
@@ -80,22 +77,6 @@ public class Shot implements Runnable, Serializable {
 
     public void setDirect(int direct) {
         this.direct = direct;
-    }
-
-    public int getPanelX() {
-        return panelX;
-    }
-
-    public void setPanelX(int panelX) {
-        this.panelX = panelX;
-    }
-
-    public int getPanelY() {
-        return panelY;
-    }
-
-    public void setPanelY(int panelY) {
-        this.panelY = panelY;
     }
 
     public boolean isLive() {

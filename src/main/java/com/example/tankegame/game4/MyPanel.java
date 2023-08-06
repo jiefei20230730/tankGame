@@ -12,28 +12,33 @@ import java.util.Vector;
  * @version 1.0.0
  */
 public class MyPanel extends JPanel implements KeyListener, Runnable {
-    private int width;
-    private int height;
+    public static int width;
+    public static int height;
     //定义我的坦克
     Hero hero = null;
     Vector<Enemy> enemyVector = new Vector<>();
-    int enemyTankSize = 3;
+    int enemyTankSize = 5;
+    Vector<Bomb> bombVector = new Vector<>();
 
     public MyPanel(int width, int height) {
-        this.width = width;
-        this.height = height;
+        MyPanel.width = width;
+        MyPanel.height = height;
 
         //初始化我的坦克
-        this.hero = new Hero(0, 0);
+        hero = new Hero(400, 400);
+        hero.setSpeed(20);//给我自己提速度
         //初始化敌人的坦克
         for (int i = 0; i < enemyTankSize; i++) {//todo 写死生成的敌方坦克
-            Enemy enemy = new Enemy(100 * (i + 1), 40);
+            Enemy enemy = new Enemy(100 * (i + 1), 100 * (i + 1));
             enemy.setDirect(2);
             if (i == 2) {
                 enemy.setDirect(3);
             }
             enemyVector.add(enemy);
             enemy.shot(width, height);//每个敌方坦克射击一下
+            //开启线程
+            Thread thread = new Thread(enemy);
+            thread.start();
         }
     }
 
@@ -57,18 +62,24 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
         System.out.println("执行了画坦克");
         //画我的坦克和子弹
         drawTank(hero.getX(), hero.getY(), g, hero.getDirect(), hero.getColor());
-        for (Shot shot : hero.getShotVector()) {
+        Iterator<Shot> shotIterator = hero.getShotVector().iterator();
+        while (shotIterator.hasNext()) {
+            Shot shot = shotIterator.next();
             System.out.println("当前子弹数量：" + hero.getShotVector().size());
             //判断当前子弹是否击中敌方，击中的话当前子弹和敌方坦克一起消失
             if (shot.isLive()) {
                 drawBullet(shot, g, hero.getColor());
                 hitTank(shot);
+            } else {
+                shot.interrupt();
+                shotIterator.remove();
             }
         }
 
         //画敌方坦克和子弹
         Iterator<Enemy> enemyIterator = enemyVector.iterator();
         while (enemyIterator.hasNext()) {
+            System.out.println("当前子弹数量：" + hero.getShotVector().size());
             Enemy enemy = enemyIterator.next();
             drawTank(enemy.getX(), enemy.getY(), g, enemy.getDirect(), enemy.getColor());
 
@@ -78,10 +89,26 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
                 if (shot.isLive()) {
                     drawBullet(shot, g, enemy.getColor());
                 } else {
+                    shot.interrupt();
                     iterator.remove();
                 }
             }
         }
+
+        //画炸弹
+        Iterator<Bomb> bombIterator = bombVector.iterator();
+        while (bombIterator.hasNext()) {
+            Bomb bomb = bombIterator.next();
+            if (bomb.getLife() > 0) {
+                drawBomb(bomb, g);
+            }
+        }
+    }
+
+    private void drawBomb(Bomb bomb, Graphics g) {
+        Image image = Toolkit.getDefaultToolkit().getImage(MyPanel.class.getResource("/image/image11.jpg"));
+        g.drawImage(image, bomb.getX() - 2 * (bomb.getLife()), bomb.getY() - 2 * (bomb.getLife()), 4 * (bomb.getLife()), 4 * (bomb.getLife()), this);
+        bomb.lifeDown();
     }
 
     /*子弹中心（比如子弹范围0,0-2,2  则中心为0,1）*/
@@ -109,13 +136,29 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
     public void keyPressed(KeyEvent e) {//监听键盘按键
         //根据用户按下的不同键，来处理小球的移动
         if (e.getKeyCode() == KeyEvent.VK_UP) {
-            hero.moveUp();
+            if (hero.getY() - 30 > 0) {
+                hero.moveUp();
+            } else {
+                hero.setDirect(0);
+            }
         } else if (e.getKeyCode() == KeyEvent.VK_DOWN) {
-            hero.moveDown();
+            if (hero.getY() + 30 < 750) {
+                hero.moveDown();
+            } else {
+                hero.setDirect(2);
+            }
         } else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
-            hero.moveLeft();
+            if (hero.getX() - 30 > 0) {
+                hero.moveLeft();
+            } else {
+                hero.setDirect(3);
+            }
         } else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
-            hero.moveRight();
+            if (hero.getX() + 30 < 1000) {
+                hero.moveRight();
+            } else {
+                hero.setDirect(1);
+            }
         } else {
             System.out.println("监听到无法处理的键盘按键：" + e.getKeyChar());
         }
@@ -194,8 +237,13 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
         while (iterator.hasNext()) {
             Enemy enemy = iterator.next();
             if (innerTank(shot, enemy)) {
-                iterator.remove();
+                //添加炸弹，开启线程
+                Bomb bomb = new Bomb(enemy.getX(), enemy.getY());
+                bombVector.add(bomb);
+                //删除敌方坦克，设置子弹失效
+                enemy.setLive(false);
                 shot.setLive(false);
+                iterator.remove();
             }
         }
     }

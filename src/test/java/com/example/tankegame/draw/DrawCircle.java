@@ -50,7 +50,7 @@ class MyPanel extends JPanel {
 //        g.setColor(Color.blue);
 //        g.fillOval(100, 100, 100, 100);
         //画图片
-//        Image image = Toolkit.getDefaultToolkit().getImage(MyPanel.class.getResource("/image/image1.jpg"));
+//        Image image = Toolkit.getDefaultToolkit().getImage(MyPanel.class.getResource("/image/image11.jpg"));
 //        g.drawImage(image, 10, 10, 690, 690, this);
         //画字符串
         //给画笔设置颜色和字体
