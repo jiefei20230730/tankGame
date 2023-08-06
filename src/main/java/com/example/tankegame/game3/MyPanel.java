@@ -4,13 +4,14 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.Iterator;
 import java.util.Vector;
 
 /**
  * @author wza
  * @version 1.0.0
  */
-public class MyPanel extends JPanel implements KeyListener,Runnable{
+public class MyPanel extends JPanel implements KeyListener, Runnable {
     private int width;
     private int height;
     //定义我的坦克
@@ -29,12 +30,13 @@ public class MyPanel extends JPanel implements KeyListener,Runnable{
             Enemy enemy = new Enemy(100 * (i + 1), 40);
             enemy.setDirect(2);
             enemyVector.add(enemy);
+            enemy.shot(width, height);//每个敌方坦克射击一下
         }
     }
 
     @Override
     public void run() {
-        while (true){
+        while (true) {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
@@ -48,22 +50,37 @@ public class MyPanel extends JPanel implements KeyListener,Runnable{
     public void paint(Graphics g) {
         super.paint(g);
         //画板
-        g.fillRect(0, 0, 1000, 750);
-        //画坦克
+        g.fillRect(0, 0, width, height);
         System.out.println("执行了画坦克");
+        //画我的坦克和子弹
         drawTank(hero.getX(), hero.getY(), g, hero.getDirect(), hero.getColor());
-        for (Enemy enemy : enemyVector) {
-            drawTank(enemy.getX(), enemy.getY(), g, enemy.getDirect(), enemy.getColor());
-        }
-        //画子弹
         for (Shot shot : hero.getShotVector()) {
             System.out.println("当前子弹数量：" + hero.getShotVector().size());
-            if (shot.isLive()){
+            //判断当前子弹是否击中敌方，击中的话当前子弹和敌方坦克一起消失
+            if (shot.isLive()) {
                 drawBullet(shot, g, hero.getColor());
+                isShoted(shot);
             }
         }
+
+        //画敌方坦克和子弹
+        for (Enemy enemy : enemyVector) {
+            drawTank(enemy.getX(), enemy.getY(), g, enemy.getDirect(), enemy.getColor());
+
+            Iterator<Shot> iterator = enemy.getShotVector().iterator();
+            if (iterator.hasNext()) {
+                Shot shot = iterator.next();
+                if (shot.isLive()) {
+                    drawBullet(shot, g, enemy.getColor());
+                } else {
+                    iterator.remove();
+                }
+            }
+        }
+
     }
 
+    /*子弹中心（比如子弹范围0,0-2,2  则中心为0,1）*/
     private void drawBullet(Shot shot, Graphics g, int type) {
         System.out.println("当前子弹：" + shot.toString());
         //根据类型，设置不同颜色
@@ -74,6 +91,8 @@ public class MyPanel extends JPanel implements KeyListener,Runnable{
             case 1://敌人的坦克
                 g.setColor(Color.cyan);
                 break;
+            default:
+                throw new RuntimeException("无法判断坦克类型");
         }
         g.fill3DRect(shot.getX() - 1, shot.getY(), 2, 2, false);
     }
@@ -84,7 +103,6 @@ public class MyPanel extends JPanel implements KeyListener,Runnable{
 
     @Override
     public void keyPressed(KeyEvent e) {//监听键盘按键
-        System.out.println("按下" + (char) e.getKeyCode());
         //根据用户按下的不同键，来处理小球的移动
         if (e.getKeyCode() == KeyEvent.VK_UP) {
             hero.moveUp();
@@ -100,7 +118,7 @@ public class MyPanel extends JPanel implements KeyListener,Runnable{
 
         //J发射子弹
         if (e.getKeyCode() == KeyEvent.VK_J) {
-            hero.shotEnemyTank(width,height);
+            hero.shot(width, height);
         }
 
         this.repaint();
@@ -164,4 +182,36 @@ public class MyPanel extends JPanel implements KeyListener,Runnable{
         }
     }
 
+    private void isShoted(Shot shot) {
+
+        Iterator<Enemy> iterator = enemyVector.iterator();
+        if (iterator.hasNext()) {
+            Enemy enemy = iterator.next();
+            if (innerTank(shot, enemy)) {
+                iterator.remove();
+                shot.setLive(false);
+            }
+        }
+    }
+
+    private boolean innerTank(Shot shot, Enemy enemy) {
+        //子弹任何一角在坦克内就算击中
+        //左上 shot.getX()-1，shot.getY()
+        //左下 shot.getX()-1，shot.getY()+2
+        //右上 shot.getX()+1，shot.getY()
+        //右下 shot.getX()+1，shot.getY()+2
+        if (shot.getX() - 1 > enemy.getX() - 20 && shot.getX() - 1 < enemy.getX() + 20 && shot.getY() > enemy.getY() - 30 && shot.getY() < enemy.getY() + 30) {
+            return true;
+        }
+        if (shot.getX() - 1 > enemy.getX() - 20 && shot.getX() - 1 < enemy.getX() + 20 && shot.getY() + 2 > enemy.getY() - 30 && shot.getY() + 2 < enemy.getY() + 30) {
+            return true;
+        }
+        if (shot.getX() + 1 > enemy.getX() - 20 && shot.getX() + 1 < enemy.getX() + 20 && shot.getY() > enemy.getY() - 30 && shot.getY() < enemy.getY() + 30) {
+            return true;
+        }
+        if (shot.getX() + 1 > enemy.getX() - 20 && shot.getX() + 1 < enemy.getX() + 20 && shot.getY() + 2 > enemy.getY() - 30 && shot.getY() + 2 < enemy.getY() + 30) {
+            return true;
+        }
+        return false;
+    }
 }

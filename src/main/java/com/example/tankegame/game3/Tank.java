@@ -1,5 +1,7 @@
 package com.example.tankegame.game3;
 
+import java.util.Vector;
+
 /**
  * @author wza
  * @version 1.0.0
@@ -8,6 +10,16 @@ public class Tank {
     private int x;
     private int y;
     private int direct;
+    private Vector<Shot> shotVector = new Vector<>();//定义子弹
+
+    public void shot(int panelX, int panelY) {
+        //添加到bulletVector，画板去画
+        Shot shot = new Shot(this, panelX, panelY);
+        shotVector.add(shot);
+        //开启线程
+        Thread thread = new Thread(shot);
+        thread.start();
+    }
 
     public int getX() {
         return x;
@@ -56,5 +68,13 @@ public class Tank {
     public void moveRight() {
         x++;
         direct=1;
+    }
+
+    public Vector<Shot> getShotVector() {
+        return shotVector;
+    }
+
+    public void setShotVector(Vector<Shot> shotVector) {
+        this.shotVector = shotVector;
     }
 }
