@@ -61,25 +61,26 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
         g.fillRect(0, 0, width, height);
         System.out.println("执行了画坦克");
         //画我的坦克和子弹
-        drawTank(hero.getX(), hero.getY(), g, hero.getDirect(), hero.getColor());
-        Iterator<Shot> shotIterator = hero.getShotVector().iterator();
-        while (shotIterator.hasNext()) {
-            Shot shot = shotIterator.next();
-            System.out.println("当前子弹数量：" + hero.getShotVector().size());
-            //判断当前子弹是否击中敌方，击中的话当前子弹和敌方坦克一起消失
-            if (shot.isLive()) {
-                drawBullet(shot, g, hero.getColor());
-                hitTank(shot);
-            } else {
-                shot.interrupt();
-                shotIterator.remove();
+        if (hero != null && hero.isLive()) {
+            drawTank(hero.getX(), hero.getY(), g, hero.getDirect(), hero.getColor());
+            Iterator<Shot> shotIterator = hero.getShotVector().iterator();
+            while (shotIterator.hasNext()) {
+                Shot shot = shotIterator.next();
+                System.out.println("当前子弹数量：" + hero.getShotVector().size());
+                //判断当前子弹是否击中敌方，击中的话当前子弹和敌方坦克一起消失
+                if (shot.isLive()) {
+                    drawBullet(shot, g, hero.getColor());
+                    hitTank(shot, hero);
+                } else {
+                    shot.interrupt();
+                    shotIterator.remove();
+                }
             }
         }
 
         //画敌方坦克和子弹
         Iterator<Enemy> enemyIterator = enemyVector.iterator();
         while (enemyIterator.hasNext()) {
-            System.out.println("当前子弹数量：" + hero.getShotVector().size());
             Enemy enemy = enemyIterator.next();
             drawTank(enemy.getX(), enemy.getY(), g, enemy.getDirect(), enemy.getColor());
 
@@ -88,6 +89,7 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
                 Shot shot = iterator.next();
                 if (shot.isLive()) {
                     drawBullet(shot, g, enemy.getColor());
+                    hitTank(shot, enemy);
                 } else {
                     shot.interrupt();
                     iterator.remove();
@@ -134,6 +136,9 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
 
     @Override
     public void keyPressed(KeyEvent e) {//监听键盘按键
+        if (hero == null) {
+            return;
+        }
         //根据用户按下的不同键，来处理小球的移动
         if (e.getKeyCode() == KeyEvent.VK_UP) {
             if (hero.getY() - 30 > 0) {
@@ -231,35 +236,53 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
         }
     }
 
-    private void hitTank(Shot shot) {
+    private void hitTank(Shot shot, Tank tank) {
 
-        Iterator<Enemy> iterator = enemyVector.iterator();
-        while (iterator.hasNext()) {
-            Enemy enemy = iterator.next();
-            if (innerTank(shot, enemy)) {
-                //添加炸弹，开启线程
-                Bomb bomb = new Bomb(enemy.getX(), enemy.getY());
-                bombVector.add(bomb);
-                //删除敌方坦克，设置子弹失效
-                enemy.setLive(false);
-                shot.setLive(false);
-                iterator.remove();
+        if (tank instanceof Hero) {
+            Iterator<Enemy> iterator = enemyVector.iterator();
+            while (iterator.hasNext()) {
+                Enemy enemy = iterator.next();
+                if (innerTank(shot, enemy)) {
+                    //添加炸弹，开启线程
+                    Bomb bomb = new Bomb(enemy.getX(), enemy.getY());
+                    bombVector.add(bomb);
+                    //删除敌方坦克，设置子弹失效
+                    enemy.setLive(false);
+                    shot.setLive(false);
+                    iterator.remove();
+                }
             }
         }
+
+        if (tank instanceof Enemy) {
+            if (innerTank(shot, hero)) {
+                //添加炸弹，开启线程
+                Bomb bomb = new Bomb(hero.getX(), hero.getY());
+                bombVector.add(bomb);
+                //删除我的坦克，设置子弹失效
+                hero.setLive(false);
+                shot.setLive(false);
+                hero = null;
+            }
+        }
+
     }
 
-    private boolean innerTank(Shot shot, Enemy enemy) {
+    private boolean innerTank(Shot shot, Tank tank) {
         //子弹中心（shot.getX()，shot.getY()+1）在坦克边界就算击中
-        switch (enemy.getDirect()) {
+        if (tank == null) {
+            return false;
+        }
+        switch (tank.getDirect()) {
             case 0:
             case 2:
-                if (shot.getX() >= enemy.getX() - 20 && shot.getX() <= enemy.getX() + 20 && shot.getY() + 1 >= enemy.getY() - 30 && shot.getY() + 1 <= enemy.getY() + 30) {
+                if (shot.getX() >= tank.getX() - 20 && shot.getX() <= tank.getX() + 20 && shot.getY() + 1 >= tank.getY() - 30 && shot.getY() + 1 <= tank.getY() + 30) {
                     return true;
                 }
                 break;
             case 1:
             case 3:
-                if (shot.getX() >= enemy.getX() - 30 && shot.getX() <= enemy.getX() + 30 && shot.getY() + 1 >= enemy.getY() - 20 && shot.getY() + 1 <= enemy.getY() + 20) {
+                if (shot.getX() >= tank.getX() - 30 && shot.getX() <= tank.getX() + 30 && shot.getY() + 1 >= tank.getY() - 20 && shot.getY() + 1 <= tank.getY() + 20) {
                     return true;
                 }
                 break;
